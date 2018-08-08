@@ -41,7 +41,7 @@ function external_entities_entity_type_build(array &$entity_types) {
         'list_builder' => 'Drupal\external_entities\ExternalEntityListBuilder',
         'access' => 'Drupal\external_entities\ExternalEntityAccessControlHandler',
         'route_provider' => [
-          'html' => 'Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider',
+          'html' => 'Drupal\external_entities\Routing\ExternalEntityHtmlRouteProvider',
         ],
       ],
       'entity_keys' => [

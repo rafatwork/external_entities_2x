@@ -46,6 +46,9 @@ class ExternalEntityPermissions {
       "view {$id} external entity" => [
         'title' => $this->t('%type_name: View any external entity', $t_params),
       ],
+      "view {$id} external entity collection" => [
+        'title' => $this->t('%type_name: View external entity listing', $t_params),
+      ],
       "create {$id} external entity" => [
         'title' => $this->t('%type_name: Create new external entity', $t_params),
       ],
