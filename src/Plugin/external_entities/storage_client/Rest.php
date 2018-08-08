@@ -1,0 +1,435 @@
+<?php
+
+namespace Drupal\external_entities\Plugin\external_entities\storage_client;
+
+use Drupal\external_entities\StorageClient\ExternalEntityStorageClientBase;
+use Drupal\Core\Plugin\PluginFormInterface;
+use Drupal\external_entities\Plugin\PluginFormTrait;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use GuzzleHttp\ClientInterface;
+use Drupal\external_entities\ExternalEntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * External entities storage client based on a REST API.
+ *
+ * @ExternalEntityStorageClient(
+ *   id = "rest",
+ *   label = @Translation("REST"),
+ *   description = @Translation("Retrieves external entities from a REST API.")
+ * )
+ */
+class Rest extends ExternalEntityStorageClientBase implements PluginFormInterface {
+
+  use PluginFormTrait;
+
+  /**
+   * The HTTP client to fetch the files with.
+   *
+   * @var \GuzzleHttp\ClientInterface
+   */
+  protected $httpClient;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    /** @var static $storage_client */
+    $storage_client = parent::create($container, $configuration, $plugin_id, $plugin_definition);
+    $storage_client->setHttpClient($container->get('http_client'));
+    return $storage_client;
+  }
+
+  /**
+   * Returns the HTTP client to use for this plugin.
+   *
+   * @return \GuzzleHttp\ClientInterface
+   *   The HTTP client.
+   */
+  public function getHttpClient() {
+    return $this->httpClient ?: \Drupal::httpClient();
+  }
+
+  /**
+   * Sets the module handler to use for this plugin.
+   *
+   * @param \GuzzleHttp\ClientInterface $http_client
+   *   An HTTP client.
+   *
+   * @return $this
+   */
+  public function setHttpClient(ClientInterface $http_client) {
+    $this->httpClient = $http_client;
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function defaultConfiguration() {
+    return [
+      'endpoint' => NULL,
+      'response_format' => NULL,
+      'pager' => [
+        'default_limit' => 50,
+        'page_parameter' => NULL,
+        'page_parameter_type' => NULL,
+        'page_size_parameter' => NULL,
+        'page_size_parameter_type' => NULL,
+      ],
+      'api_key' => [
+        'header_name' => NULL,
+        'key' => NULL,
+      ],
+      'parameters' => [
+        'list' => NULL,
+        'single' => NULL,
+      ],
+    ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    $form['endpoint'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Endpoint'),
+      '#required' => TRUE,
+      '#default_value' => $this->configuration['endpoint'],
+    ];
+
+    $formats = $this->responseDecoderFactory->supportedFormats();
+    $form['response_format'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Response format'),
+      '#options' => array_combine($formats, $formats),
+      '#required' => TRUE,
+      '#default_value' => $this->configuration['response_format'],
+    ];
+
+    $form['pager'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Pager settings'),
+    ];
+
+    $form['pager']['default_limit'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Default number of items per page'),
+      '#default_value' => $this->configuration['pager']['default_limit'],
+    ];
+
+    $form['pager']['page_parameter'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Page parameter'),
+      '#default_value' => $this->configuration['pager']['page_parameter'],
+    ];
+
+    $form['pager']['page_parameter_type'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Page parameter type'),
+      '#options' => [
+        'pagenum' => $this->t('Page number'),
+        'startitem' => $this->t('Starting item'),
+      ],
+      '#description' => $this->t('Use "Page number" when the pager uses page numbers to determine the item to start at, use "Starting item" when the pager uses the item number to start at.'),
+      '#default_value' => $this->configuration['pager']['page_parameter_type'],
+    ];
+
+    $form['pager']['page_size_parameter'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Page size parameter'),
+      '#default_value' => $this->configuration['pager']['page_size_parameter'],
+    ];
+
+    $form['pager']['page_size_parameter_type'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Page size parameter type'),
+      '#options' => [
+        'pagesize' => $this->t('Number of items per page'),
+        'enditem' => $this->t('Ending item'),
+      ],
+      '#description' => $this->t('Use "Number of items per pager" when the pager uses this parameter to determine the amount of items on each page, use "Ending item when the pager uses this parameter to determine the number of the last item on the page.'),
+      '#default_value' => $this->configuration['pager']['page_size_parameter_type'],
+    ];
+
+    $form['api_key']['header_name'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Header name'),
+      '#description' => $this->t('The HTTP header name for the API key. Leave blank if no API key is required.'),
+      '#default_value' => $this->configuration['api_key']['header_name'],
+    ];
+
+    $form['api_key']['key'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('API key'),
+      '#description' => $this->t('The API key needed to communicate with the entered endpoint. Leave blank if no API key is required.'),
+      '#default_value' => $this->configuration['api_key']['key'],
+    ];
+
+    $form['parameters'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Parameters'),
+    ];
+
+    $form['parameters']['list'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('List parameters'),
+      '#description' => $this->t('Enter the parameters to add to the endpoint URL when loading the list of entities. One per line in the format "parameter_name|parameter_value"'),
+      '#default_value' => $this->getParametersFormDefaultValue('list'),
+    ];
+
+    $form['parameters']['single'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Single parameters'),
+      '#description' => $this->t('Enter the parameters to add to the endpoint URL when loading a single of entities. One per line in the format "parameter_name|parameter_value"'),
+      '#default_value' => $this->getParametersFormDefaultValue('single'),
+    ];
+
+    return $form;
+  }
+
+  /**
+   * Helper function to convert a parameter collection to a string.
+   *
+   * @param string $type
+   *   The type of parameters (eg. 'list' or 'single').
+   *
+   * @return string|null
+   *   A string to be used as default value, or NULL if no parameters.
+   */
+  protected function getParametersFormDefaultValue($type) {
+    $default_value = NULL;
+
+    if (!empty($this->configuration['parameters'][$type])) {
+      $lines = [];
+      foreach ($this->configuration['parameters'][$type] as $key => $value) {
+        $array = array_unique([$key, $value]);
+        $lines[] = implode('|', $array);
+      }
+      $default_value = implode("\n", $lines);
+    }
+
+    return $default_value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
+    $parameters = $form_state->getValue('parameters');
+    foreach ($parameters as $type => $value) {
+      $lines = explode("\n", $value);
+      $lines = array_map('trim', $lines);
+      $lines = array_filter($lines, 'strlen');
+      $parameters[$type] = [];
+      foreach ($lines as $line) {
+        $exploded = explode('|', $line);
+        $value = !empty($exploded[1]) ? $exploded[1] : $exploded[0];
+        $parameters[$type][$exploded[0]] = $value;
+      }
+    }
+    $form_state->setValue('parameters', $parameters);
+
+    $this->setConfiguration($form_state->getValues());
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function delete(ExternalEntityInterface $entity) {
+    $this->httpClient->request(
+      'DELETE',
+      $this->configuration['endpoint'] . '/' . $entity->id(),
+      [
+        'headers' => $this->getHttpHeaders(),
+      ]
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function load($id) {
+    $response = $this->httpClient->request(
+      'GET',
+      $this->configuration['endpoint'] . '/' . $id,
+      [
+        'headers' => $this->getHttpHeaders(),
+        'query' => $this->getSingleQueryParameters($id),
+      ]
+    );
+
+    return $this
+      ->getResponseDecoderFactory()
+      ->getDecoder($this->configuration['response_format'])
+      ->decode($response->getBody());
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function save(ExternalEntityInterface $entity) {
+    if ($entity->id()) {
+      $response = $this->httpClient->request(
+        'PUT',
+        $this->configuration['endpoint'] . '/' . $entity->id(),
+        [
+          'form_params' => $entity->extractRawData(),
+          'headers' => $this->getHttpHeaders(),
+        ]
+      );
+      $result = SAVED_UPDATED;
+    }
+    else {
+      $response = $this->httpClient->request(
+        'POST',
+        $this->configuration['endpoint'],
+        [
+          'form_params' => $entity->extractRawData(),
+          'headers' => $this->getHttpHeaders(),
+        ]
+      );
+      $result = SAVED_NEW;
+    }
+
+    // TODO: Is it standard REST to return the new entity?
+    $raw_data = $this
+      ->getResponseDecoderFactory()
+      ->getDecoder($this->configuration['response_format'])
+      ->decode($response->getBody());
+    $entity->mapRawData($raw_data);
+
+    return $result;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function query(array $parameters) {
+    $response = $this->httpClient->request(
+      'GET',
+      $this->configuration['endpoint'],
+      [
+        'headers' => $this->getHttpHeaders(),
+        'query' => $this->getListQueryParameters($parameters),
+      ]
+    );
+
+    $results = $this
+      ->getResponseDecoderFactory()
+      ->getDecoder($this->configuration['response_format'])
+      ->decode($response->getBody());
+
+    return $results;
+  }
+
+  /**
+   * Prepares and returns parameters used for list queries.
+   *
+   * @param array $parameters
+   *   (optional) Raw parameter values.
+   *
+   * @return array
+   *   An associative array of parameters.
+   */
+  public function getListQueryParameters(array $parameters = []) {
+    $query_parameters = [];
+
+    // Currently always providing a limit.
+    // TODO: What with count queries?
+    $start = !empty($parameters['range']['start']) ? $parameters['range']['start'] : NULL;
+    $length = !empty($parameters['range']['length']) ? $parameters['range']['length'] : NULL;
+    $query_parameters += $this->getPagingQueryParameters($start, $length);
+    unset($parameters['range']);
+
+    foreach ($parameters as $key => $value) {
+      $query_parameters[$key] = is_array($value)
+        ? implode(',', $value)
+        : $value;
+    }
+
+    if (!empty($this->configuration['parameters']['list'])) {
+      $query_parameters += $this->configuration['parameters']['list'];
+    }
+
+    return $query_parameters;
+  }
+
+  /**
+   * Gets the paging query parameters based on the configuration.
+   *
+   * @param int $start
+   *   (optional) Item index to start with.
+   * @param int $length
+   *   (optional) Amount of items to return.
+   *
+   * @return array
+   *   An associative array of paging parameters.
+   */
+  public function getPagingQueryParameters($start = NULL, $length = NULL) {
+    $paging_parameters = [];
+
+    if ($this->configuration['pager']['page_parameter'] && $this->configuration['pager']['page_size_parameter']) {
+      $start = $start ?: 0;
+      $end = $length ?: $this->configuration['pager']['default_limit'];
+
+      if ($this->configuration['pager']['page_parameter_type'] === 'pagenum') {
+        $start = $start / $end;
+      }
+
+      if ($this->configuration['pager']['page_size_parameter_type'] === 'enditem') {
+        $end = $start + $end;
+      }
+
+      $paging_parameters[$this->configuration['pager']['page_parameter']] = $start;
+      $paging_parameters[$this->configuration['pager']['page_size_parameter']] = $end;
+    }
+
+    return $paging_parameters;
+  }
+
+  /**
+   * Prepares and returns parameters used for single item queries.
+   *
+   * @param int|string $id
+   *   The item id being fetched.
+   * @param array $parameters
+   *   (optional) Raw parameter values.
+   *
+   * @return array
+   *   An associative array of parameters.
+   */
+  public function getSingleQueryParameters($id, array $parameters = []) {
+    $query_parameters = [];
+
+    foreach ($parameters as $key => $value) {
+      $query_parameters[$key] = is_array($value)
+        ? implode(',', $value)
+        : $value;
+    }
+
+    if (!empty($this->configuration['parameters']['single'])) {
+      $query_parameters += $this->configuration['parameters']['single'];
+    }
+
+    return $query_parameters;
+  }
+
+  /**
+   * Gets the HTTP headers to add to a request.
+   *
+   * @return array
+   *   Associative array of headers to add to the request.
+   */
+  public function getHttpHeaders() {
+    $headers = [];
+
+    if ($this->configuration['api_key']['header_name'] && $this->configuration['api_key']['key']) {
+      $headers[$this->configuration['api_key']['header_name']] = $this->configuration['api_key']['key'];
+    }
+
+    return $headers;
+  }
+
+}

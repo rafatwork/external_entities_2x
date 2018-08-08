@@ -1,0 +1,176 @@
+<?php
+
+/**
+ * @file
+ * Allows using remote entities, for example through a REST interface.
+ */
+
+use Drupal\Core\Entity\ContentEntityType;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\external_entities\ExternalEntityInterface;
+use Drupal\Core\Access\AccessResult;
+use Drupal\external_entities\ExternalEntityTypeInterface;
+use Drupal\Core\Url;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_entity_type_build().
+ */
+function external_entities_entity_type_build(array &$entity_types) {
+  // Check for the external_entity_type config entity.
+  if (!empty($entity_types['external_entity_type'])) {
+    $external_entity_type_config = $entity_types['external_entity_type'];
+
+    // Get the existing external entity type configurations.
+    /* @var \Drupal\external_entities\ExternalEntityTypeInterface[] $external_entity_types */
+    $external_entity_types = \Drupal::entityTypeManager()->createHandlerInstance(
+      $external_entity_type_config->getHandlerClass('storage'),
+      $external_entity_type_config
+    )->loadMultiple();
+
+    // Base definitions for each external entity type.
+    $base_definition = [
+      'handlers' => [
+        'storage' => 'Drupal\external_entities\ExternalEntityStorage',
+        'view_builder' => 'Drupal\Core\Entity\EntityViewBuilder',
+        'form' => [
+          'default' => 'Drupal\external_entities\Form\Entity\ExternalEntityForm',
+          'edit' => 'Drupal\external_entities\Form\Entity\ExternalEntityForm',
+          'delete' => 'Drupal\external_entities\Form\Entity\ExternalEntityDeleteForm',
+        ],
+        'list_builder' => 'Drupal\external_entities\ExternalEntityListBuilder',
+        'access' => 'Drupal\external_entities\ExternalEntityAccessControlHandler',
+        'route_provider' => [
+          'html' => 'Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider',
+        ],
+      ],
+      'entity_keys' => [
+        'id' => 'id',
+        'label' => 'title',
+      ],
+      'provider' => 'external_entities',
+      'class' => 'Drupal\external_entities\Entity\ExternalEntity',
+      'admin_permission' => 'administer external entity types',
+    ];
+
+    // Add custom particular definitions for each external entity type.
+    foreach ($external_entity_types as $external_entity_type) {
+      // Definitions for the entity type.
+      $definition = [
+        'id' => $external_entity_type->id,
+        'label' => t($external_entity_type->getLabel()),
+        'label_plural' => t($external_entity_type->getPluralLabel()),
+        'label_collection' => t($external_entity_type->getPluralLabel()),
+        'links' => [
+          'collection' => "/{$external_entity_type->getBasePath()}",
+          'canonical' => "/{$external_entity_type->getBasePath()}/{{$external_entity_type->id}}",
+          'edit-form' => "/{$external_entity_type->getBasePath()}/{{$external_entity_type->id}}/edit",
+          'delete-form' => "/{$external_entity_type->getBasePath()}/{{$external_entity_type->id}}/delete",
+        ],
+        'field_ui_base_route' => 'entity.external_entity_type.' . $external_entity_type->id . '.edit_form',
+        'permission_granularity' => 'entity_type',
+        'persistent_cache' => (bool) $external_entity_type->getPersistentCacheMaxAge(),
+      ];
+      // Merge the definitions.
+      $definition = array_merge($definition, $base_definition);
+      // Add the new content entity to the entity types.
+      $entity_types[$definition['id']] = new ContentEntityType($definition);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_access().
+ */
+function external_entities_entity_access(EntityInterface $entity, $op, $account) {
+  if ($entity instanceof ExternalEntityInterface) {
+    $id = $entity->getExternalEntityType()->id();
+
+    switch ($op) {
+      case 'create':
+        return AccessResult::allowedIfHasPermission($account, "create {$id} external entity");
+
+      case 'update':
+        return AccessResult::allowedIfHasPermission($account, "edit {$id} external entity");
+
+      case 'delete':
+        return AccessResult::allowedIfHasPermission($account, "delete {$id} external entity");
+
+    }
+  }
+
+  // No opinion.
+  return AccessResult::neutral();
+}
+
+/**
+ * Implements hook_entity_operation().
+ */
+function external_entities_entity_operation(EntityInterface $entity) {
+  $operations = [];
+
+  if ($entity instanceof ExternalEntityTypeInterface) {
+    /* @var \Drupal\external_entities\ExternalEntityTypeInterface $entity */
+    $derived_entity_type = $entity->getDerivedEntityType();
+    $account = \Drupal::currentUser();
+    if ($account->hasPermission('administer ' . $derived_entity_type->id() . ' fields')) {
+      $operations['manage-fields'] = [
+        'title' => t('Manage fields'),
+        'weight' => 15,
+        'url' => Url::fromRoute("entity.{$derived_entity_type->id()}.field_ui_fields"),
+      ];
+    }
+    if ($account->hasPermission('administer ' . $derived_entity_type->id() . ' form display')) {
+      $operations['manage-form-display'] = [
+        'title' => t('Manage form display'),
+        'weight' => 20,
+        'url' => Url::fromRoute("entity.entity_form_display.{$derived_entity_type->id()}.default"),
+      ];
+    }
+    if ($account->hasPermission('administer ' . $derived_entity_type->id() . ' display')) {
+      $operations['manage-display'] = [
+        'title' => t('Manage display'),
+        'weight' => 25,
+        'url' => Url::fromRoute("entity.entity_view_display.{$derived_entity_type->id()}.default"),
+      ];
+    }
+  }
+
+  return $operations;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for 'field_storage_config_edit_form'.
+ *
+ * Replace the default cardinality form validation. External entity field values
+ * reside in an external storage making the higher delta checks unnecessary.
+ */
+function external_entities_form_field_storage_config_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  if (!empty($form['cardinality_container']['#element_validate'])) {
+    $entity_type = \Drupal::entityTypeManager()->getDefinition($form_state->get('entity_type_id'));
+    if ($entity_type && $entity_type->getProvider() === 'external_entities') {
+      $key = array_search('::validateCardinality', $form['cardinality_container']['#element_validate']);
+      if ($key !== FALSE) {
+        $form['cardinality_container']['#element_validate'][$key] = 'external_entities_field_storage_config_edit_form_validate_cardinality';
+      }
+    }
+  }
+}
+
+/**
+ * Validates the cardinality form for external entities.
+ *
+ * This validates a subset of what the core cardinality validation validates.
+ *
+ * @param array $element
+ *   The cardinality form render array.
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   The form state.
+ *
+ * @see \Drupal\field_ui\Form\FieldStorageConfigEditForm::validateCardinality()
+ */
+function external_entities_field_storage_config_edit_form_validate_cardinality(array &$element, FormStateInterface $form_state) {
+  if ($form_state->getValue('cardinality') === 'number' && !$form_state->getValue('cardinality_number')) {
+    $form_state->setError($element['cardinality_number'], t('Number of values is required.'));
+  }
+}
