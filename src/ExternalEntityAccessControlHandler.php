@@ -6,6 +6,7 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\node\Plugin\views\filter\Access;
 
 /**
  * Defines a generic access control handler for external entities.
@@ -13,41 +14,39 @@ use Drupal\Core\Session\AccountInterface;
 class ExternalEntityAccessControlHandler extends EntityAccessControlHandler {
 
   /**
-   * Allow access to the external entity label.
-   *
-   * @var bool
-   */
-  protected $viewLabelOperation = TRUE;
-
-  /**
    * {@inheritdoc}
    */
-  public function access(EntityInterface $entity, $operation, AccountInterface $account = NULL, $return_as_object = FALSE) {
+  protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
     /* @var \Drupal\external_entities\ExternalEntityInterface $entity */
-    if (!in_array($operation, ['view label', 'view']) && $entity->getExternalEntityType()->isReadOnly()) {
-      return $return_as_object
-        ? AccessResult::forbidden()->cachePerPermissions()
-        : FALSE;
+    $result = parent::checkAccess($entity, $operation, $account);
+
+    if ($result->isNeutral()) {
+      if (!in_array($operation, ['view label', 'view']) && $entity->getExternalEntityType()->isReadOnly()) {
+        $result = AccessResult::forbidden()->addCacheableDependency($entity);
+      }
+      else {
+        $result = AccessResult::allowedIfHasPermission($account, "{$operation} {$entity->getEntityTypeId()} external entity");
+      }
     }
 
-    return parent::access($entity, $operation, $account, $return_as_object);
+    return $result;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function createAccess($entity_bundle = NULL, AccountInterface $account = NULL, array $context = [], $return_as_object = FALSE) {
+  protected function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
+    $result = parent::checkCreateAccess($account, $context, $entity_bundle);
+
     /* @var \Drupal\external_entities\ExternalEntityTypeInterface $external_entity_type */
     $external_entity_type = \Drupal::entityTypeManager()
       ->getStorage('external_entity_type')
       ->load($this->entityTypeId);
     if ($external_entity_type && $external_entity_type->isReadOnly()) {
-      return $return_as_object
-        ? AccessResult::forbidden()->cachePerPermissions()
-        : FALSE;
+      $result = AccessResult::forbidden()->addCacheableDependency($this->entityType);
     }
 
-    return parent::createAccess($entity_bundle, $account, $context, $return_as_object);
+    return $result;
   }
 
 }

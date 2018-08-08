@@ -52,7 +52,7 @@ class ExternalEntityPermissions {
       "create {$id} external entity" => [
         'title' => $this->t('%type_name: Create new external entity', $t_params),
       ],
-      "edit {$id} external entity" => [
+      "update {$id} external entity" => [
         'title' => $this->t('%type_name: Edit any external entity', $t_params),
       ],
       "delete {$id} external entity" => [
