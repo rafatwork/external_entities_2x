@@ -1,0 +1,10 @@
+{
+    "name": "drupal/external_entities_2x",
+    "version": "2.x-dev",
+    "type": "drupal-module",
+    "source": {
+        "url": "https://github.com/rafatwork/external_entities_2x.git",
+        "type": "git",
+        "reference": "master"
+    }
+}
