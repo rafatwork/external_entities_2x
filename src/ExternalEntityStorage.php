@@ -181,11 +181,13 @@ class ExternalEntityStorage extends ContentEntityStorageBase implements External
           ->getStorageClient()
           ->load($id);
 
-        /* @var \Drupal\external_entities\ExternalEntityInterface $external_entity */
-        $external_entity = $this->create();
-        $entities[$id] = $external_entity
-          ->mapRawData($raw_data)
-          ->enforceIsNew(FALSE);
+        if (!empty($raw_data)) {
+          /* @var \Drupal\external_entities\ExternalEntityInterface $external_entity */
+          $external_entity = $this->create();
+          $entities[$id] = $external_entity
+            ->mapRawData($raw_data)
+            ->enforceIsNew(FALSE);
+        }
       }
     }
 
