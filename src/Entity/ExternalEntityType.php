@@ -44,28 +44,28 @@ class ExternalEntityType extends ConfigEntityBase implements ExternalEntityTypeI
    *
    * @var string
    */
-  public $id;
+  protected $id;
 
   /**
    * The human-readable name of the external entity type.
    *
    * @var string
    */
-  public $label;
+  protected $label;
 
   /**
    * The plural human-readable name of the external entity type.
    *
    * @var string
    */
-  public $label_plural;
+  protected $label_plural;
 
   /**
    * The external entity type description.
    *
    * @var string
    */
-  public $description;
+  protected $description;
 
   /**
    * Whether or not entity types of this external entity type are read only.
