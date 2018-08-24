@@ -254,6 +254,27 @@ class Rest extends ExternalEntityStorageClientBase implements PluginFormInterfac
   /**
    * {@inheritdoc}
    */
+  public function loadMultiple(array $ids = NULL) {
+    $data = [];
+
+    if (!empty($ids) && is_array($ids)) {
+      foreach ($ids as $id) {
+        $data[$id] = $this->load($id);
+      }
+    }
+
+    return $data;
+  }
+
+  /**
+   * Loads one entity.
+   *
+   * @param mixed $id
+   *   The ID of the entity to load.
+   *
+   * @return array|null
+   *   A raw data array, NULL if no data returned.
+   */
   public function load($id) {
     $response = $this->httpClient->request(
       'GET',

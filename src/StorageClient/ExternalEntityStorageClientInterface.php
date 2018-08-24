@@ -21,15 +21,15 @@ interface ExternalEntityStorageClientInterface extends PluginInspectionInterface
   public function getName();
 
   /**
-   * Loads one entity.
+   * Loads raw data for one or more entities.
    *
-   * @param mixed $id
-   *   The ID of the entity to load.
+   * @param array|null $ids
+   *   An array of IDs, or NULL to load all entities.
    *
-   * @return array|null
-   *   A raw data array, NULL if no data returned.
+   * @return array
+   *   An array of raw data arrays indexed by their IDs.
    */
-  public function load($id);
+  public function loadMultiple(array $ids = NULL);
 
   /**
    * Saves the entity permanently.
