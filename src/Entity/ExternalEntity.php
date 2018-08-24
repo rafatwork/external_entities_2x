@@ -18,6 +18,8 @@ use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 
 /**
  * Defines the external entity class.
+ *
+ * @see external_entities_entity_type_build()
  */
 class ExternalEntity extends ContentEntityBase implements ExternalEntityInterface {
 
