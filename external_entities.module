@@ -79,6 +79,12 @@ function external_entities_entity_type_build(array &$entity_types) {
 
 /**
  * Implements hook_entity_operation().
+ *
+ * We need to generate Field UI operations (manage fields and displays) manually
+ * because the Field UI module only provides them for entity bundles, not entity
+ * types.
+ *
+ * @see field_ui_entity_operation()
  */
 function external_entities_entity_operation(EntityInterface $entity) {
   $operations = [];
