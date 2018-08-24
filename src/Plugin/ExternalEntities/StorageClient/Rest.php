@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\external_entities\Plugin\external_entities\storage_client;
+namespace Drupal\external_entities\Plugin\ExternalEntities\StorageClient;
 
 use Drupal\external_entities\StorageClient\ExternalEntityStorageClientBase;
 use Drupal\Core\Plugin\PluginFormInterface;
@@ -33,7 +33,7 @@ class Rest extends ExternalEntityStorageClientBase implements PluginFormInterfac
   protected $httpClient;
 
   /**
-   * Constructs a Drupal\external_entities\Plugin\external_entities\storage_client\Rest object.
+   * Constructs a Rest object.
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.

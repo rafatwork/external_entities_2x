@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\external_entities\Plugin\external_entities\storage_client;
+namespace Drupal\external_entities\Plugin\ExternalEntities\StorageClient;
 
 /**
  * External entities storage client based on a REST API.

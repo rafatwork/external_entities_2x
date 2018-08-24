@@ -24,7 +24,7 @@ class ExternalEntityStorageClientManager extends DefaultPluginManager {
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler) {
     parent::__construct(
-      'Plugin/external_entities/storage_client',
+      'Plugin/ExternalEntities/StorageClient',
       $namespaces,
       $module_handler,
       'Drupal\external_entities\StorageClient\ExternalEntityStorageClientInterface',
