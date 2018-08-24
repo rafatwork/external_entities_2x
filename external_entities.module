@@ -55,17 +55,17 @@ function external_entities_entity_type_build(array &$entity_types) {
     foreach ($external_entity_types as $external_entity_type) {
       // Definitions for the entity type.
       $definition = [
-        'id' => $external_entity_type->id,
+        'id' => $external_entity_type->id(),
         'label' => t($external_entity_type->getLabel()),
         'label_plural' => t($external_entity_type->getPluralLabel()),
         'label_collection' => t($external_entity_type->getPluralLabel()),
         'links' => [
           'collection' => "/{$external_entity_type->getBasePath()}",
-          'canonical' => "/{$external_entity_type->getBasePath()}/{{$external_entity_type->id}}",
-          'edit-form' => "/{$external_entity_type->getBasePath()}/{{$external_entity_type->id}}/edit",
-          'delete-form' => "/{$external_entity_type->getBasePath()}/{{$external_entity_type->id}}/delete",
+          'canonical' => "/{$external_entity_type->getBasePath()}/{{$external_entity_type->id()}}",
+          'edit-form' => "/{$external_entity_type->getBasePath()}/{{$external_entity_type->id()}}/edit",
+          'delete-form' => "/{$external_entity_type->getBasePath()}/{{$external_entity_type->id()}}/delete",
         ],
-        'field_ui_base_route' => 'entity.external_entity_type.' . $external_entity_type->id . '.edit_form',
+        'field_ui_base_route' => 'entity.external_entity_type.' . $external_entity_type->id() . '.edit_form',
         'permission_granularity' => 'entity_type',
         'persistent_cache' => (bool) $external_entity_type->getPersistentCacheMaxAge(),
       ];
