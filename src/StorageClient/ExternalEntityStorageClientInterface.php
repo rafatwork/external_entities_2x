@@ -22,24 +22,6 @@ interface ExternalEntityStorageClientInterface extends PluginInspectionInterface
   public function getName();
 
   /**
-   * Retrieves the external entity type entity for this storage client.
-   *
-   * @return \Drupal\external_entities\ExternalEntityTypeInterface
-   *   The external entity type entity.
-   */
-  public function getExternalEntityType();
-
-  /**
-   * Sets the external entity type entity for this storage client.
-   *
-   * @param \Drupal\external_entities\ExternalEntityTypeInterface $external_entity_type
-   *   The external entity type entity.
-   *
-   * @return $this
-   */
-  public function setExternalEntityType(ExternalEntityTypeInterface $external_entity_type);
-
-  /**
    * Loads one entity.
    *
    * @param mixed $id

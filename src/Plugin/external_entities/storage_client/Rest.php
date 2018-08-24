@@ -5,8 +5,10 @@ namespace Drupal\external_entities\Plugin\external_entities\storage_client;
 use Drupal\external_entities\StorageClient\ExternalEntityStorageClientBase;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\external_entities\Plugin\PluginFormTrait;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\StringTranslation\TranslationInterface;
+use Drupal\external_entities\ResponseDecoder\ResponseDecoderFactoryInterface;
 use GuzzleHttp\ClientInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\external_entities\ExternalEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -31,36 +33,38 @@ class Rest extends ExternalEntityStorageClientBase implements PluginFormInterfac
   protected $httpClient;
 
   /**
+   * Constructs a Drupal\external_entities\Plugin\external_entities\storage_client\Rest object.
+   *
+   * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
+   * @param string $plugin_id
+   *   The plugin_id for the plugin instance.
+   * @param mixed $plugin_definition
+   *   The plugin implementation definition.
+   * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
+   *   The string translation service.
+   * @param \Drupal\external_entities\ResponseDecoder\ResponseDecoderFactoryInterface $response_decoder_factory
+   *   The response decoder factory service.
+   * @param \GuzzleHttp\ClientInterface $http_client
+   *   A Guzzle client object.
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, TranslationInterface $string_translation, ResponseDecoderFactoryInterface $response_decoder_factory, ClientInterface $http_client) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $string_translation, $response_decoder_factory);
+    $this->httpClient = $http_client;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    /** @var static $storage_client */
-    $storage_client = parent::create($container, $configuration, $plugin_id, $plugin_definition);
-    $storage_client->setHttpClient($container->get('http_client'));
-    return $storage_client;
-  }
-
-  /**
-   * Returns the HTTP client to use for this plugin.
-   *
-   * @return \GuzzleHttp\ClientInterface
-   *   The HTTP client.
-   */
-  public function getHttpClient() {
-    return $this->httpClient ?: \Drupal::httpClient();
-  }
-
-  /**
-   * Sets the module handler to use for this plugin.
-   *
-   * @param \GuzzleHttp\ClientInterface $http_client
-   *   An HTTP client.
-   *
-   * @return $this
-   */
-  public function setHttpClient(ClientInterface $http_client) {
-    $this->httpClient = $http_client;
-    return $this;
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('string_translation'),
+      $container->get('external_entities.response_decoder_factory'),
+      $container->get('http_client')
+    );
   }
 
   /**

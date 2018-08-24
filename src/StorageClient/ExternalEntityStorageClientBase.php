@@ -4,10 +4,11 @@ namespace Drupal\external_entities\StorageClient;
 
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\Plugin\PluginDependencyTrait;
+use Drupal\Core\StringTranslation\TranslationInterface;
+use Drupal\external_entities\ResponseDecoder\ResponseDecoderFactoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\external_entities\ExternalEntityTypeInterface;
 use Drupal\Component\Utility\NestedArray;
-use Drupal\external_entities\ResponseDecoder\ResponseDecoderFactoryInterface;
 
 /**
  * Base class for external entity storage clients.
@@ -37,26 +38,41 @@ abstract class ExternalEntityStorageClientBase extends PluginBase implements Ext
   protected $responseDecoderFactory;
 
   /**
-   * {@inheritdoc}
+   * Constructs a Drupal\external_entities\StorageClient\ExternalEntityStorageClientBase object.
+   *
+   * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
+   * @param string $plugin_id
+   *   The plugin_id for the plugin instance.
+   * @param mixed $plugin_definition
+   *   The plugin implementation definition.
+   * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
+   *   The string translation service.
+   * @param \Drupal\external_entities\ResponseDecoder\ResponseDecoderFactoryInterface $response_decoder_factory
+   *   The response decoder factory service.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, TranslationInterface $string_translation, ResponseDecoderFactoryInterface $response_decoder_factory) {
+    $configuration += $this->defaultConfiguration();
     if (!empty($configuration['_external_entity_type']) && $configuration['_external_entity_type'] instanceof ExternalEntityTypeInterface) {
-      $this->setExternalEntityType($configuration['_external_entity_type']);
+      $this->externalEntityType = $configuration['_external_entity_type'];
       unset($configuration['_external_entity_type']);
     }
-
-    $configuration += $this->defaultConfiguration();
     parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->setStringTranslation($string_translation);
+    $this->responseDecoderFactory = $response_decoder_factory;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    $storage_client = new static($configuration, $plugin_id, $plugin_definition);
-    $storage_client->setStringTranslation($container->get('string_translation'));
-    $storage_client->setResponseDecoderFactory($container->get('external_entities.response_decoder_factory'));
-    return $storage_client;
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('string_translation'),
+      $container->get('external_entities.response_decoder_factory')
+    );
   }
 
   /**
@@ -80,21 +96,6 @@ abstract class ExternalEntityStorageClientBase extends PluginBase implements Ext
   public function getDescription() {
     $plugin_definition = $this->getPluginDefinition();
     return isset($plugin_definition['description']) ? $plugin_definition['description'] : '';
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getExternalEntityType() {
-    return $this->externalEntityType;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setExternalEntityType(ExternalEntityTypeInterface $external_entity_type) {
-    $this->externalEntityType = $external_entity_type;
-    return $this;
   }
 
   /**
