@@ -38,7 +38,7 @@ abstract class ExternalEntityStorageClientBase extends PluginBase implements Ext
   protected $responseDecoderFactory;
 
   /**
-   * Constructs a Drupal\external_entities\StorageClient\ExternalEntityStorageClientBase object.
+   * Constructs a ExternalEntityStorageClientBase object.
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.

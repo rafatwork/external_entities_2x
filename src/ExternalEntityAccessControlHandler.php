@@ -6,7 +6,6 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\node\Plugin\views\filter\Access;
 
 /**
  * Defines a generic access control handler for external entities.

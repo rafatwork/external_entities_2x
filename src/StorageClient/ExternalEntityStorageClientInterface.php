@@ -5,7 +5,6 @@ namespace Drupal\external_entities\StorageClient;
 use Drupal\Component\Plugin\PluginInspectionInterface;
 use Drupal\Component\Plugin\ConfigurablePluginInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\external_entities\ExternalEntityTypeInterface;
 use Drupal\external_entities\ExternalEntityInterface;
 
 /**
