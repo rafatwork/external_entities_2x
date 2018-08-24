@@ -7,8 +7,6 @@
 
 use Drupal\Core\Entity\ContentEntityType;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\external_entities\ExternalEntityInterface;
-use Drupal\Core\Access\AccessResult;
 use Drupal\external_entities\ExternalEntityTypeInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
@@ -77,30 +75,6 @@ function external_entities_entity_type_build(array &$entity_types) {
       $entity_types[$definition['id']] = new ContentEntityType($definition);
     }
   }
-}
-
-/**
- * Implements hook_entity_access().
- */
-function external_entities_entity_access(EntityInterface $entity, $op, $account) {
-  if ($entity instanceof ExternalEntityInterface) {
-    $id = $entity->getExternalEntityType()->id();
-
-    switch ($op) {
-      case 'create':
-        return AccessResult::allowedIfHasPermission($account, "create {$id} external entity");
-
-      case 'update':
-        return AccessResult::allowedIfHasPermission($account, "edit {$id} external entity");
-
-      case 'delete':
-        return AccessResult::allowedIfHasPermission($account, "delete {$id} external entity");
-
-    }
-  }
-
-  // No opinion.
-  return AccessResult::neutral();
 }
 
 /**
