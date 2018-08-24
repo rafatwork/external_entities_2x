@@ -32,9 +32,9 @@ function external_entities_entity_type_build(array &$entity_types) {
         'storage' => 'Drupal\external_entities\ExternalEntityStorage',
         'view_builder' => 'Drupal\Core\Entity\EntityViewBuilder',
         'form' => [
-          'default' => 'Drupal\external_entities\Form\Entity\ExternalEntityForm',
-          'edit' => 'Drupal\external_entities\Form\Entity\ExternalEntityForm',
-          'delete' => 'Drupal\external_entities\Form\Entity\ExternalEntityDeleteForm',
+          'default' => 'Drupal\Core\Entity\ContentEntityForm',
+          'edit' => 'Drupal\Core\Entity\ContentEntityForm',
+          'delete' => 'Drupal\Core\Entity\ContentEntityDeleteForm',
         ],
         'list_builder' => 'Drupal\external_entities\ExternalEntityListBuilder',
         'access' => 'Drupal\external_entities\ExternalEntityAccessControlHandler',
