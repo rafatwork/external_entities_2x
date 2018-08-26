@@ -19,12 +19,14 @@ class ExternalEntityAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
-    /* @var \Drupal\external_entities\ExternalEntityInterface $entity */
     $result = parent::checkAccess($entity, $operation, $account);
 
     if ($result->isNeutral()) {
-      if (!in_array($operation, ['view label', 'view']) && $entity->getExternalEntityType()->isReadOnly()) {
-        $result = AccessResult::forbidden()->addCacheableDependency($entity);
+      $external_entity_type = $this->getExternalEntityType();
+      if (!in_array($operation, ['view label', 'view']) && $external_entity_type->isReadOnly()) {
+        $result = AccessResult::forbidden()
+          ->addCacheableDependency($entity)
+          ->addCacheableDependency($external_entity_type);
       }
       else {
         $result = AccessResult::allowedIfHasPermission($account, "{$operation} {$entity->getEntityTypeId()} external entity");
@@ -42,7 +44,9 @@ class ExternalEntityAccessControlHandler extends EntityAccessControlHandler {
 
     $external_entity_type = $this->getExternalEntityType();
     if ($external_entity_type && $external_entity_type->isReadOnly()) {
-      $result = AccessResult::forbidden()->addCacheableDependency($this->entityType);
+      $result = AccessResult::forbidden()
+        ->addCacheableDependency($this->entityType)
+        ->addCacheableDependency($external_entity_type);
     }
 
     return $result;
