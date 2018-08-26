@@ -10,6 +10,16 @@ use Drupal\Core\Entity\ContentEntityInterface;
 interface ExternalEntityInterface extends ContentEntityInterface {
 
   /**
+   * Defines the field name used to reference the optional annotation entity.
+   */
+  const ANNOTATION_FIELD = 'annotation';
+
+  /**
+   * Defines the prefix of annotation fields inherited by the external entity.
+   */
+  const ANNOTATION_FIELD_PREFIX = 'annotation_';
+
+  /**
    * Gets the external entity type.
    *
    * @return \Drupal\external_entities\ExternalEntityTypeInterface

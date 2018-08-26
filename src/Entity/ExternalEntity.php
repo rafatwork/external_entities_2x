@@ -24,16 +24,6 @@ use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 class ExternalEntity extends ContentEntityBase implements ExternalEntityInterface {
 
   /**
-   * Defines the field name used to reference the optional annotation entity.
-   */
-  const ANNOTATION_FIELD = 'annotation';
-
-  /**
-   * Defines the prefix of annotation fields inherited by the external entity.
-   */
-  const ANNOTATION_FIELD_PREFIX = 'annotation_';
-
-  /**
    * {@inheritdoc}
    */
   public function getExternalEntityType() {
@@ -88,7 +78,7 @@ class ExternalEntity extends ContentEntityBase implements ExternalEntityInterfac
       ->load($entity_type->id());
     if ($external_entity_type->isAnnotatable()) {
       // Add the annotation reference field.
-      $fields[static::ANNOTATION_FIELD] = BaseFieldDefinition::create('entity_reference')
+      $fields[ExternalEntityInterface::ANNOTATION_FIELD] = BaseFieldDefinition::create('entity_reference')
         ->setLabel(t('Annotation'))
         ->setDescription(t('The annotation entity.'))
         ->setSetting('target_type', $external_entity_type->getAnnotationEntityTypeId())
@@ -116,7 +106,7 @@ class ExternalEntity extends ContentEntityBase implements ExternalEntityInterfac
       // Have the external entity inherit its annotation fields.
       if ($external_entity_type->inheritsAnnotationFields()) {
         $inherited_fields = static::getInheritedAnnotationFields($external_entity_type);
-        $field_prefix = ExternalEntity::ANNOTATION_FIELD_PREFIX;
+        $field_prefix = ExternalEntityInterface::ANNOTATION_FIELD_PREFIX;
         foreach ($inherited_fields as $field) {
           $field_definition = BaseFieldDefinition::createFromFieldStorageDefinition($field->getFieldStorageDefinition())
             ->setName($field_prefix . $field->getName())
@@ -283,10 +273,10 @@ class ExternalEntity extends ContentEntityBase implements ExternalEntityInterfac
     if ($external_entity_type->isAnnotatable()) {
       $annotation = $this->getAnnotation();
       if ($annotation) {
-        $this->set(static::ANNOTATION_FIELD, $annotation->id());
+        $this->set(ExternalEntityInterface::ANNOTATION_FIELD, $annotation->id());
         if ($external_entity_type->inheritsAnnotationFields()) {
           $inherited_fields = static::getInheritedAnnotationFields($external_entity_type);
-          $field_prefix = static::ANNOTATION_FIELD_PREFIX;
+          $field_prefix = ExternalEntityInterface::ANNOTATION_FIELD_PREFIX;
           foreach ($inherited_fields as $field_name => $inherited_field) {
             $value = $annotation->get($field_name)->getValue();
             if (!empty($value)) {

@@ -10,7 +10,6 @@ use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Entity\EntityStorageException;
-use Drupal\external_entities\Entity\ExternalEntity;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Cache\Cache;
@@ -245,7 +244,7 @@ class ExternalEntityStorage extends ContentEntityStorageBase implements External
 
     if ($external_entity_type->isAnnotatable()) {
       $referenced_entities = $entity
-        ->get(ExternalEntity::ANNOTATION_FIELD)
+        ->get(ExternalEntityInterface::ANNOTATION_FIELD)
         ->referencedEntities();
       if ($referenced_entities) {
         $annotation = array_shift($referenced_entities);

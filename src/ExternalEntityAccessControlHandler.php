@@ -8,7 +8,6 @@ use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
-use Drupal\external_entities\Entity\ExternalEntity;
 
 /**
  * Defines a generic access control handler for external entities.
@@ -64,7 +63,7 @@ class ExternalEntityAccessControlHandler extends EntityAccessControlHandler {
     // the Inline Entity Form module).
     if ($operation === 'edit') {
       $external_entity_type = $this->getExternalEntityType();
-      if ($external_entity_type && $external_entity_type->isReadOnly() && $field_definition->getName() !== ExternalEntity::ANNOTATION_FIELD) {
+      if ($external_entity_type && $external_entity_type->isReadOnly() && $field_definition->getName() !== ExternalEntityInterface::ANNOTATION_FIELD) {
         $result = AccessResult::forbidden()
           ->addCacheableDependency($this->entityType)
           ->addCacheableDependency($external_entity_type);
