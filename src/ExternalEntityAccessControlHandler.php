@@ -23,7 +23,7 @@ class ExternalEntityAccessControlHandler extends EntityAccessControlHandler {
 
     if ($result->isNeutral()) {
       $external_entity_type = $this->getExternalEntityType();
-      if (!in_array($operation, ['view label', 'view']) && $external_entity_type->isReadOnly()) {
+      if (!in_array($operation, ['view label', 'view']) && $external_entity_type->isReadOnly() && !$external_entity_type->isAnnotatable()) {
         $result = AccessResult::forbidden()
           ->addCacheableDependency($entity)
           ->addCacheableDependency($external_entity_type);
